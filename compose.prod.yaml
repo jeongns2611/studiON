@@ -1,0 +1,64 @@
+services:
+  nginx:
+    build:
+      context: ./FE
+      target: runtime
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_WS_BASE_URL: ${VITE_WS_BASE_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: on-failure:2
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot
+    depends_on:
+      - backend
+
+  certbot:
+    image: certbot/certbot
+    entrypoint: >
+      certbot certonly --webroot
+      --webroot-path=/var/www/certbot
+      --email $$CERTBOT_EMAIL
+      --agree-tos
+      --no-eff-email
+      -d $$CERTBOT_DOMAIN
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+
+  backend:
+    build: ./BE
+    env_file:
+      - .env.prod
+    environment:
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+    restart: on-failure:2
+    # Redis healthcheck 통과 후 backend 시작
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7
+    container_name: redis
+    env_file:
+      - .env.prod
+    command: sh -c 'redis-server --requirepass "$$REDIS_PASSWORD"'
+    restart: on-failure:2
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+      
+volumes:
+  certbot_www:
+  redis_data:

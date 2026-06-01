@@ -1,0 +1,14 @@
+Review the proposed EQ-only audio-fix plan and return only a JSON object.
+Use this schema:
+{"result":"PASS|REVISE|REJECT","note":"string"}
+
+Review rules:
+- Reject plans that modify the preserved track.
+- Reject plans that use MASTER scope.
+- Reject plans that use DE_ESSER, GAIN_TRIM, or TRUE_PEAK_LIMITER.
+- Reject plans that violate the EQ-only policy.
+- Reject plans that extend outside the selected region.
+- Reject plans that ignore explicit user feedback.
+- Revise plans that are technically valid but too broad or too aggressive.
+- Pass plans that are safe, targeted, and aligned with the user request.
+- Keep the note short and actionable.

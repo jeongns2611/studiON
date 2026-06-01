@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+  <!-- viewport : 모바일 화면에서 화면 비율을 기기 크기에 맞추는 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 웹사이트 제목 -->
+  <title>studiON</title>
+
+  <!-- Google Tag Manager -->
+  <script>
+    ;(function(w,d,s,l,i){
+      w[l]=w[l]||[]
+      w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'})
+      var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer'?'&l='+l:''
+      j.async=true
+      j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl
+      f.parentNode.insertBefore(j,f)
+    })(window,document,'script','dataLayer','GTM-TWLJSJKG')
+  </script>
+  <!-- End Google Tag Manager -->
+</head>
+
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript>
+    <iframe
+      src="https://www.googletagmanager.com/ns.html?id=GTM-TWLJSJKG"
+      height="0"
+      width="0"
+      style="display:none;visibility:hidden"
+    ></iframe>
+  </noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <!-- 실제 화면이 그려질 캔버스(도화지) -->
+  <div id="app"></div>
+  <!-- 프로그램 시작점 -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

@@ -1,0 +1,1855 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planner/Critic Playground</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --panel: #fffdf8;
+      --line: #d8cdbb;
+      --text: #201a15;
+      --muted: #6d6258;
+      --accent: #0f6d62;
+      --accent-2: #a54b2a;
+      --code: #f2ede3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 109, 98, 0.08), transparent 24rem),
+        radial-gradient(circle at top right, rgba(165, 75, 42, 0.08), transparent 24rem),
+        var(--bg);
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .notice {
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.85);
+      border-radius: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.05fr 0.95fr;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(32, 26, 21, 0.05);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    input, textarea, button {
+      font: inherit;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: white;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 240px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .row-3 {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #3c4f6f;
+    }
+
+    button.ghost {
+      background: #e9e0d2;
+      color: var(--text);
+    }
+
+    button.warn {
+      background: var(--accent-2);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      border-radius: 14px;
+      background: var(--code);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #ece5d8;
+      color: var(--text);
+      font-size: 13px;
+      margin: 0 8px 8px 0;
+    }
+
+    .regions,
+    .plan-board,
+    .action-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .region,
+    .meta-card,
+    .plan-block,
+    .action-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: white;
+    }
+
+    .region strong,
+    .action-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .plan-empty {
+      padding: 16px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: rgba(242, 237, 227, 0.55);
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .plan-hero {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(15, 109, 98, 0.1), rgba(255, 253, 248, 0.92)),
+        white;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .plan-title {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .plan-summary {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .meta-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .meta-label,
+    .block-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .meta-value {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .plan-block p {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .action-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+
+    .action-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #efe7da;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .preview-box {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .preview-meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .preview-meta > div {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      line-height: 1.5;
+    }
+
+    .preview-panel {
+      margin-top: 16px;
+    }
+
+    .preview-compare {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+    }
+
+    .preview-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+
+    .preview-audio {
+      width: 100%;
+    }
+
+    .preview-canvas {
+      width: 100%;
+      height: 220px;
+      border-radius: 12px;
+      border: 1px solid rgba(33, 37, 41, 0.08);
+      background: linear-gradient(180deg, #fffef9 0%, #f7f1e7 100%);
+    }
+
+    .preview-canvas.short {
+      height: 140px;
+    }
+
+    .preview-canvas.tall {
+      height: 180px;
+    }
+
+    .preview-canvas.spectrum {
+      height: 220px;
+    }
+
+    .preview-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+
+    .compare-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .compare-section-title {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .compare-section-caption {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .overlay-details {
+      border: 1px solid rgba(33, 37, 41, 0.08);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px 12px;
+    }
+
+    .overlay-details summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .overlay-details pre {
+      margin: 10px 0 0;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .metric-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .metric-card {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8f3ea;
+      border: 1px solid rgba(33, 37, 41, 0.08);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .metric-value {
+      margin-top: 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .hint-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .hint-card {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(33, 37, 41, 0.08);
+      background: #fff;
+    }
+
+    .hint-card.warn {
+      background: #fff7e8;
+    }
+
+    .hint-card.good {
+      background: #eff7ee;
+    }
+
+    .hint-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    .hint-prompt {
+      margin-top: 8px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .chart-title {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .preview-loading {
+      padding: 16px;
+      border-radius: 12px;
+      background: #f8f3ea;
+      color: var(--muted);
+    }
+
+    .chart-caption {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1100px) {
+      .preview-compare,
+      .preview-grid,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .accordion {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.82);
+      overflow: hidden;
+    }
+
+    .accordion summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 16px 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .accordion summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .accordion summary::after {
+      content: "+";
+      font-size: 20px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .accordion[open] summary::after {
+      content: "−";
+    }
+
+    .accordion-body {
+      padding: 0 18px 18px;
+    }
+
+    @media (max-width: 960px) {
+      .grid,
+      .row,
+      .row-3,
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="notice">
+      <h1>Planner/Critic Playground</h1>
+      <p><code>start -> poll -> resume</code> 흐름으로 planner와 critic 결과를 확인하는 수동 테스트 화면입니다.</p>
+      <p>오른쪽 패널에서 에이전트가 세운 계획을 카드 형태로 보고, 아래 raw JSON으로 상세 응답도 함께 확인할 수 있습니다.</p>
+    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <section class="panel">
+          <h2>1. Start Job</h2>
+          <div class="row">
+            <div>
+              <label for="apiBase">API Base</label>
+              <input id="apiBase" value="http://127.0.0.1:8000/api/v1" />
+            </div>
+            <div>
+              <label for="requestedBy">requested_by</label>
+              <input id="requestedBy" type="number" value="1" />
+            </div>
+          </div>
+          <div class="row-3" style="margin-top: 12px;">
+            <div>
+              <label for="jobId">job_id</label>
+              <input id="jobId" type="number" value="910001" />
+            </div>
+            <div>
+              <label for="projectId">project_id</label>
+              <input id="projectId" type="number" value="310001" />
+            </div>
+            <div>
+              <label for="issueTypes">issue_types</label>
+              <input id="issueTypes" value="band_overlap,track_clipping,sibilance,high_band_harshness" />
+            </div>
+          </div>
+          <div style="margin-top: 12px;">
+            <label for="snapshotJson">project_snapshot JSON</label>
+            <textarea id="snapshotJson"></textarea>
+          </div>
+          <div class="buttons">
+            <button id="fillSampleBtn" class="ghost" type="button">샘플 채우기</button>
+            <button id="startBtn" type="button">Start</button>
+            <button id="pollBtn" class="secondary" type="button">Poll</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>2. Resume Plan Input</h2>
+          <div class="row">
+            <div>
+              <label for="selectedRegionId">selected_region_id</label>
+              <input id="selectedRegionId" />
+            </div>
+            <div>
+              <label for="preserveClipId">preserve_clip_id</label>
+              <input id="preserveClipId" type="number" />
+            </div>
+          </div>
+          <div style="margin-top: 12px;">
+            <label for="feedbackMessage">user_feedback_message</label>
+            <textarea id="feedbackMessage" style="min-height: 96px;">부드럽게 수정해줘.</textarea>
+          </div>
+          <div class="buttons">
+            <button id="autofillBtn" class="ghost" type="button">첫 region 자동 입력</button>
+            <button id="resumeBtn" class="warn" type="button">Resume</button>
+          </div>
+          <div class="regions" id="regions"></div>
+        </section>
+
+        <section class="panel">
+          <h2>3. Preview</h2>
+          <p>before는 같은 문제 구간의 master, after는 대표 action이 반영된 master-context excerpt입니다.</p>
+          <div class="buttons">
+            <button id="pollPreviewBtn" class="secondary" type="button">Preview Poll</button>
+            <button id="autoplayPreviewBtn" class="ghost" type="button">Poll Until Ready</button>
+            <button id="confirmBtn" type="button">Confirm</button>
+            <button id="cancelBtn" class="warn" type="button">Cancel</button>
+          </div>
+          <div id="previewBox" class="preview-box" style="margin-top: 12px;">
+            <div class="preview-meta muted">preview_render가 아직 없습니다.</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel">
+          <details class="accordion">
+            <summary>Latest Status</summary>
+            <div class="accordion-body">
+              <div id="summaryPills"></div>
+              <pre id="summaryText">아직 응답이 없습니다.</pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <details class="accordion">
+            <summary>Agent Plan</summary>
+            <div class="accordion-body">
+              <div id="planBoard" class="plan-board">
+                <div class="plan-empty">planner/critic가 만든 계획이 아직 없습니다. Start 후 Poll 하거나 Plan Input Resume 뒤 다시 Poll 하세요.</div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <details class="accordion">
+            <summary>Latest Response JSON</summary>
+            <div class="accordion-body">
+              <pre id="responseJson">{}</pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <details class="accordion">
+            <summary>Quick API Guide</summary>
+            <div class="accordion-body">
+              <pre>POST /internal/workflow/jobs/start
+GET  /internal/workflow/jobs/{job_id}
+GET  /internal/workflow/jobs/{job_id}/preview-compare
+POST /internal/workflow/jobs/resume
+
+resume payload required fields:
+- job_id
+- project_id
+- selected_region_id
+- preserve_clip_id
+- user_feedback_message (optional)</pre>
+            </div>
+          </details>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const els = {
+      apiBase: document.getElementById("apiBase"),
+      requestedBy: document.getElementById("requestedBy"),
+      jobId: document.getElementById("jobId"),
+      projectId: document.getElementById("projectId"),
+      issueTypes: document.getElementById("issueTypes"),
+      snapshotJson: document.getElementById("snapshotJson"),
+      selectedRegionId: document.getElementById("selectedRegionId"),
+      preserveClipId: document.getElementById("preserveClipId"),
+      feedbackMessage: document.getElementById("feedbackMessage"),
+      summaryText: document.getElementById("summaryText"),
+      responseJson: document.getElementById("responseJson"),
+      summaryPills: document.getElementById("summaryPills"),
+      planBoard: document.getElementById("planBoard"),
+      regions: document.getElementById("regions"),
+      previewBox: document.getElementById("previewBox"),
+      fillSampleBtn: document.getElementById("fillSampleBtn"),
+      startBtn: document.getElementById("startBtn"),
+      pollBtn: document.getElementById("pollBtn"),
+      autofillBtn: document.getElementById("autofillBtn"),
+      resumeBtn: document.getElementById("resumeBtn"),
+      pollPreviewBtn: document.getElementById("pollPreviewBtn"),
+      autoplayPreviewBtn: document.getElementById("autoplayPreviewBtn"),
+      confirmBtn: document.getElementById("confirmBtn"),
+      cancelBtn: document.getElementById("cancelBtn"),
+    };
+
+    let latestStatus = null;
+    let previewCompareRequestKey = null;
+
+    const previewPanel = document.querySelector(".grid > .stack:first-child > .panel:last-child");
+    const wrap = document.querySelector(".wrap");
+    if (previewPanel && wrap) {
+      previewPanel.classList.add("preview-panel");
+      wrap.appendChild(previewPanel);
+    }
+
+    function pretty(value) {
+      return JSON.stringify(value, null, 2);
+    }
+
+    function api(path) {
+      return `${els.apiBase.value.replace(/\/$/, "")}${path}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function parseIssueTypes() {
+      return els.issueTypes.value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function setResponse(data) {
+      latestStatus = data;
+      els.responseJson.textContent = pretty(buildCompactDebugPayload(data));
+      renderSummary(data);
+      renderPlan(data);
+      renderRegions(data);
+      renderPreviewWithMaster(data);
+    }
+
+    function renderSummary(data) {
+      const job = data?.job ?? {};
+      const projections = data?.projections ?? {};
+      const planState = projections.plan_state ?? {};
+      const suggestionGroup = projections.suggestion_group ?? null;
+      const preview = projections.preview_render ?? null;
+      const primaryAction = getPrimaryAction(data);
+      const targetRegion = getFocusRegion(data);
+      const excerptRange = preview?.preview_excerpt_range ?? null;
+
+      els.summaryPills.innerHTML = "";
+      [
+        ["status", job.status],
+        ["phase", job.phase],
+        ["current_node", job.current_node],
+        ["preview", preview?.status],
+        ["plan", planState.status],
+      ].forEach(([label, value]) => {
+        if (!value) return;
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = `${label}: ${value}`;
+        els.summaryPills.appendChild(span);
+      });
+
+      const lines = [
+        `job ${job.id ?? "-"} / project ${job.project_id ?? "-"}`,
+        `workflow: ${job.status ?? "-"} / ${job.phase ?? "-"}`,
+        `preview: ${preview?.status ?? "-"}`,
+        `region: ${preview?.preview_target_region ?? targetRegion?.id ?? suggestionGroup?.region_id ?? "-"}`,
+        `master range: ${formatRange(preview?.preview_region_start_ms ?? targetRegion?.start_ms, preview?.preview_region_end_ms ?? targetRegion?.end_ms)}`,
+        `measure: ${formatMeasureRange(preview?.preview_measure_start ?? targetRegion?.measure_start, preview?.preview_measure_end ?? targetRegion?.measure_end)}`,
+        `action type: ${preview?.preview_action_type ?? primaryAction?.action_type ?? "-"}`,
+        `action track: ${preview?.preview_action_track ?? primaryAction?.target_track_id ?? "-"}`,
+        `preview excerpt: ${formatRange(excerptRange?.start_ms, excerptRange?.end_ms)}`,
+        `validator / critic: ${[planState?.validator_result, planState?.critic_result].filter(Boolean).join(" / ") || "-"}`,
+      ];
+      els.summaryText.textContent = lines.join("\n");
+    }
+
+    function formatActionType(actionType) {
+      return String(actionType || "")
+        .toLowerCase()
+        .split("_")
+        .filter(Boolean)
+        .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+        .join(" ");
+    }
+
+    function formatRange(startMs, endMs) {
+      if (startMs == null && endMs == null) return "Range not set";
+      if (startMs == null) return `until ${endMs}ms`;
+      if (endMs == null) return `from ${startMs}ms`;
+      return `${startMs}ms - ${endMs}ms`;
+    }
+
+    function formatMeasureRange(startMeasure, endMeasure) {
+      if (startMeasure == null && endMeasure == null) return "-";
+      if (startMeasure == null) return `until ${endMeasure}`;
+      if (endMeasure == null) return `from ${startMeasure}`;
+      return startMeasure === endMeasure ? `${startMeasure}` : `${startMeasure} - ${endMeasure}`;
+    }
+
+    function getPrimarySuggestion(data) {
+      const suggestions = data?.projections?.suggestion_group?.suggestions;
+      return Array.isArray(suggestions) && suggestions.length ? suggestions[0] : null;
+    }
+
+    function getPrimaryAction(data) {
+      const actions = getPrimarySuggestion(data)?.actions;
+      return Array.isArray(actions) && actions.length ? actions[0] : null;
+    }
+
+    function getFocusRegion(data) {
+      const regionId = data?.projections?.suggestion_group?.region_id
+        ?? data?.projections?.plan_state?.selected_region_id
+        ?? null;
+      const regions = data?.projections?.analysis_regions ?? [];
+      return regions.find((region) => Number(region.id) === Number(regionId)) ?? null;
+    }
+
+    function buildPreviewDetailRows(preview, focusRegion) {
+      const excerptRange = preview?.preview_excerpt_range ?? null;
+      return [
+        ["preview_target_region", preview?.preview_target_region ?? focusRegion?.id ?? "-"],
+        ["master_range", formatRange(preview?.preview_region_start_ms ?? focusRegion?.start_ms, preview?.preview_region_end_ms ?? focusRegion?.end_ms)],
+        ["measure", formatMeasureRange(preview?.preview_measure_start ?? focusRegion?.measure_start, preview?.preview_measure_end ?? focusRegion?.measure_end)],
+        ["preview_action_type", preview?.preview_action_type ?? "-"],
+        ["preview_action_track", preview?.preview_action_track ?? "-"],
+        ["preview_excerpt_range", formatRange(excerptRange?.start_ms, excerptRange?.end_ms)],
+        ["status", preview?.status ?? "-"],
+        ["suggestion_id", preview?.suggestion_id ?? "-"],
+        ["requested_at", preview?.requested_at ?? "-"],
+        ["started_at", preview?.started_at ?? "-"],
+        ["completed_at", preview?.completed_at ?? "-"],
+        ["expired_at", preview?.expired_at ?? "-"],
+        ["error_code", preview?.error_code ?? "-"],
+        ["error", preview?.error_message ?? "-"],
+      ];
+    }
+
+    function buildCompactDebugPayload(data) {
+      const job = data?.job ?? {};
+      const projections = data?.projections ?? {};
+      const focusRegion = getFocusRegion(data);
+      const primarySuggestion = getPrimarySuggestion(data);
+      const primaryAction = getPrimaryAction(data);
+      return {
+        job: {
+          id: job.id,
+          status: job.status,
+          phase: job.phase,
+          current_node: job.current_node,
+          error_code: job.error_code,
+          error_message: job.error_message,
+        },
+        preview_render: projections.preview_render ?? null,
+        focus_region: focusRegion ? {
+          id: focusRegion.id,
+          issue_type: focusRegion.issue_type,
+          start_ms: focusRegion.start_ms,
+          end_ms: focusRegion.end_ms,
+          measure_start: focusRegion.measure_start,
+          measure_end: focusRegion.measure_end,
+          affected_clip_ids: focusRegion.affected_clip_ids,
+          track_id: focusRegion.track_id,
+          secondary_track_id: focusRegion.secondary_track_id,
+        } : null,
+        primary_suggestion: primarySuggestion ? {
+          id: primarySuggestion.id,
+          title: data?.projections?.suggestion_group?.title ?? null,
+          summary: primarySuggestion.summary,
+          explanation: primarySuggestion.explanation,
+        } : null,
+        primary_action: primaryAction ? {
+          id: primaryAction.id,
+          action_type: primaryAction.action_type,
+          target_scope: primaryAction.target_scope,
+          target_track_id: primaryAction.target_track_id,
+          clip_id: primaryAction.clip_id,
+          start_ms: primaryAction.start_ms,
+          end_ms: primaryAction.end_ms,
+          band_low_hz: primaryAction.band_low_hz,
+          band_high_hz: primaryAction.band_high_hz,
+          gain_delta_db: primaryAction.gain_delta_db,
+          params_json: primaryAction.params_json,
+        } : null,
+      };
+    }
+
+    function renderActionCard(action) {
+      const chips = [
+        action.target_scope ? `scope ${action.target_scope}` : null,
+        action.target_track_id != null ? `track ${action.target_track_id}` : null,
+        action.clip_id != null ? `clip ${action.clip_id}` : null,
+        action.band_low_hz != null || action.band_high_hz != null
+          ? `band ${action.band_low_hz ?? "?"}-${action.band_high_hz ?? "?"}Hz`
+          : null,
+        action.gain_delta_db != null ? `gain ${action.gain_delta_db}dB` : null,
+      ].filter(Boolean);
+
+      const paramsJson = action.params_json && Object.keys(action.params_json).length
+        ? `<pre>${escapeHtml(pretty(action.params_json))}</pre>`
+        : `<div class="muted">No params</div>`;
+
+      return `
+        <article class="action-card">
+          <strong>${escapeHtml(formatActionType(action.action_type) || "Action")}</strong>
+          <div class="muted">${escapeHtml(formatRange(action.start_ms, action.end_ms))}</div>
+          <div class="action-meta">
+            ${chips.map((chip) => `<span class="action-chip">${escapeHtml(chip)}</span>`).join("")}
+          </div>
+          <div style="margin-top: 12px;">
+            <div class="block-label">Params</div>
+            ${paramsJson}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderPlan(data) {
+      const projections = data?.projections ?? {};
+      const planState = projections.plan_state ?? null;
+      const suggestionGroup = projections.suggestion_group ?? null;
+      const suggestions = Array.isArray(suggestionGroup?.suggestions)
+        ? suggestionGroup.suggestions
+        : [];
+      const primarySuggestion = suggestions[0] ?? null;
+
+      if (!planState && !suggestionGroup) {
+        els.planBoard.innerHTML = `
+          <div class="plan-empty">
+            No plan yet. Start a job, poll status, or resume plan input and poll again.
+          </div>
+        `;
+        return;
+      }
+
+      const metaCards = [
+        ["Plan Status", planState?.status || "Pending"],
+        [
+          "Validation",
+          [planState?.validator_result, planState?.critic_result].filter(Boolean).join(" / ") || "Not run",
+        ],
+        ["Selected Region", suggestionGroup?.region_id || planState?.selected_region_id || "-"],
+        ["Preserve Clip", planState?.preserve_clip_id ?? "-"],
+      ];
+      const revisionNotes = Array.isArray(planState?.revision_notes) ? planState.revision_notes : [];
+      const actionHtml = primarySuggestion?.actions?.length
+        ? primarySuggestion.actions.map(renderActionCard).join("")
+        : `<div class="plan-empty">No materialized actions yet.</div>`;
+
+      els.planBoard.innerHTML = `
+        <section class="plan-hero">
+          <div class="eyebrow">Planner Result</div>
+          <h3 class="plan-title">${escapeHtml(suggestionGroup?.title || "Untitled Plan")}</h3>
+          <p class="plan-summary">${escapeHtml(suggestionGroup?.summary || primarySuggestion?.summary || "No plan summary yet.")}</p>
+        </section>
+
+        <section class="meta-grid">
+          ${metaCards.map(([label, value]) => `
+            <article class="meta-card">
+              <div class="meta-label">${escapeHtml(label)}</div>
+              <div class="meta-value">${escapeHtml(value)}</div>
+            </article>
+          `).join("")}
+        </section>
+
+        ${planState?.user_feedback_message ? `
+          <section class="plan-block">
+            <div class="block-label">User Intent</div>
+            <p>${escapeHtml(planState.user_feedback_message)}</p>
+          </section>
+        ` : ""}
+
+        ${primarySuggestion?.summary ? `
+          <section class="plan-block">
+            <div class="block-label">Plan Summary</div>
+            <p>${escapeHtml(primarySuggestion.summary)}</p>
+          </section>
+        ` : ""}
+
+        ${primarySuggestion?.explanation ? `
+          <section class="plan-block">
+            <div class="block-label">Why This Plan</div>
+            <p>${escapeHtml(primarySuggestion.explanation)}</p>
+          </section>
+        ` : ""}
+
+        ${revisionNotes.length ? `
+          <section class="plan-block">
+            <div class="block-label">Critic Notes</div>
+            <p>${escapeHtml(revisionNotes.join("\n\n"))}</p>
+          </section>
+        ` : ""}
+
+        <section>
+          <div class="block-label">Planned Actions</div>
+          <div class="action-list">${actionHtml}</div>
+        </section>
+      `;
+    }
+
+    function renderRegions(data) {
+      const regions = data?.projections?.analysis_regions ?? [];
+      els.regions.innerHTML = "";
+      for (const region of regions) {
+        const div = document.createElement("div");
+        div.className = "region";
+        const affected = Array.isArray(region.affected_clip_ids) ? region.affected_clip_ids : [];
+        const isUserActionRegion = region.requires_user_action === true;
+        const canUseMaster = canBuildMasterFromRegion(region);
+        div.innerHTML = `
+          <strong>${escapeHtml(region.id)}</strong>
+          <div class="muted">issue: ${escapeHtml(region.issue_type ?? "")}</div>
+          <div class="muted">range: ${escapeHtml(region.start_ms ?? "?")}ms - ${escapeHtml(region.end_ms ?? "?")}ms</div>
+          <div class="muted">track: ${escapeHtml(region.track_id ?? "-")} / secondary: ${escapeHtml(region.secondary_track_id ?? "-")}</div>
+          <div class="muted">user action: ${isUserActionRegion ? "yes" : "no"}</div>
+          <div class="muted">affected clips: ${escapeHtml(affected.join(", ") || "-")}</div>
+        `;
+        const fillBtn = document.createElement("button");
+        fillBtn.type = "button";
+        fillBtn.className = "ghost";
+        fillBtn.style.marginTop = "10px";
+        fillBtn.textContent = isUserActionRegion
+          ? "Use This Region"
+          : (canUseMaster ? "Use For Master" : "Auto-Fix Region");
+        fillBtn.disabled = !isUserActionRegion && !canUseMaster;
+        if (isUserActionRegion || canUseMaster) {
+          fillBtn.addEventListener("click", () => fillPlanInputFromRegion(region));
+        }
+        div.appendChild(fillBtn);
+        els.regions.appendChild(div);
+      }
+    }
+
+      function fillPlanInputFromRegion(region) {
+      els.selectedRegionId.value = region.id ?? "";
+      const firstClipId = Array.isArray(region.affected_clip_ids) ? region.affected_clip_ids[0] : "";
+      els.preserveClipId.value = firstClipId ?? "";
+      if (latestStatus) {
+        renderPreviewWithMaster(latestStatus);
+      }
+    }
+
+    function renderPreview(data) {
+      renderPreviewWithMaster(data);
+    }
+
+    function renderPreviewWithMaster(data) {
+      const preview = data?.projections?.preview_render ?? null;
+      const focusRegion = getFocusRegion(data);
+      if (!preview) {
+        els.previewBox.innerHTML = `
+          <div class="preview-meta muted">preview_render not present</div>
+        `;
+        return;
+      }
+
+      const detailRows = buildPreviewDetailRows(preview, focusRegion);
+      els.previewBox.innerHTML = `
+        <div class="preview-meta">
+          ${detailRows.map(([label, value]) => `
+            <div><strong>${escapeHtml(label)}</strong> <span class="muted">${escapeHtml(value)}</span></div>
+          `).join("")}
+        </div>
+        <div class="preview-loading">
+          ${preview.status === "READY"
+            ? "Loading visual compare..."
+            : "Preview compare becomes available after preview status is READY."}
+        </div>
+      `;
+
+      if (preview.status === "READY") {
+        void renderComparePanels(data);
+      }
+    }
+
+    async function renderComparePanels(data) {
+      const jobId = Number(data?.job?.id);
+      const isConfirmedApplied =
+        data?.job?.status === "COMPLETED"
+        && data?.projections?.feedback_event?.payload?.decision === "confirm";
+
+      try {
+        const previewCompare = await loadPreviewCompare(jobId, "preview");
+        if (!previewCompare) return;
+        const sections = [
+          renderPreviewCompare(previewCompare, {
+            title: "Preview Compare",
+            caption: "Representative preview action only. Use this to judge the user-facing confirm step.",
+          }),
+        ];
+
+        let appliedCompare = null;
+        if (isConfirmedApplied) {
+          try {
+            appliedCompare = await loadPreviewCompare(jobId, "applied");
+          } catch (error) {
+            appliedCompare = { error: String(error.message || error) };
+          }
+          if (appliedCompare?.error) {
+            sections.push(`
+              <section class="compare-section">
+                <h3 class="compare-section-title">Applied Compare</h3>
+                <p class="compare-section-caption">All deterministic auto-fix actions plus the confirmed user action.</p>
+                <div class="preview-card"><pre>${escapeHtml(appliedCompare.error)}</pre></div>
+              </section>
+            `);
+          } else if (appliedCompare) {
+            sections.push(
+              renderPreviewCompare(appliedCompare, {
+                title: "Applied Compare",
+                caption: "All deterministic auto-fix actions plus the confirmed user action.",
+              })
+            );
+          }
+        }
+
+        els.previewBox.innerHTML = `<div class="compare-stack">${sections.join("")}</div>`;
+        const roots = els.previewBox.querySelectorAll(".compare-section");
+        if (roots[0]) paintPreviewCompare(previewCompare, roots[0]);
+        if (isConfirmedApplied && roots[1] && appliedCompare && !appliedCompare.error) {
+          paintPreviewCompare(appliedCompare, roots[1]);
+        }
+      } catch (error) {
+        els.previewBox.innerHTML += `
+          <div class="preview-card">
+            <strong>Preview Compare Error</strong>
+            <pre>${escapeHtml(String(error.message || error))}</pre>
+          </div>
+        `;
+      }
+    }
+
+    async function loadPreviewCompare(jobId, mode = "preview") {
+      if (!jobId) return;
+      const requestKey = `${jobId}:${mode}:${latestStatus?.projections?.preview_render?.id ?? "none"}`;
+      previewCompareRequestKey = requestKey;
+      try {
+        const compare = await callJson(`/internal/workflow/jobs/${jobId}/preview-compare?mode=${encodeURIComponent(mode)}`, null, "GET");
+        if (previewCompareRequestKey !== requestKey) return;
+        return compare;
+      } catch (error) {
+        if (previewCompareRequestKey !== requestKey) return;
+        throw error;
+      }
+    }
+
+    function renderPreviewCompare(compare, options = {}) {
+      const title = options.title ?? "Preview Compare";
+      const caption = options.caption ?? "";
+      const preview = compare?.preview ?? {};
+      const focusRegion = compare?.focus_region ?? {};
+      const action = compare?.action ?? {};
+      const beforeExcerpt = compare?.before_excerpt ?? {};
+      const afterExcerpt = compare?.after_excerpt ?? {};
+      const beforeRegionSummary = compare?.before_region_summary ?? beforeExcerpt;
+      const afterRegionSummary = compare?.after_region_summary ?? afterExcerpt;
+      const diffExcerpt = compare?.diff_excerpt ?? {};
+      const issueOverlay = compare?.issue_overlay ?? {};
+      const hints = Array.isArray(compare?.prompt_feedback_hints) ? compare.prompt_feedback_hints : [];
+      const metrics = buildMetricCards(beforeRegionSummary, afterRegionSummary, issueOverlay);
+
+      return `
+        <section class="compare-section">
+          <h3 class="compare-section-title">${escapeHtml(title)}</h3>
+          ${caption ? `<p class="compare-section-caption">${escapeHtml(caption)}</p>` : ""}
+          <div class="preview-compare">
+          <div class="preview-card">
+            <div class="chart-title">Master Compare</div>
+            <canvas id="masterCompareCanvas" class="preview-canvas" width="920" height="220"></canvas>
+            <div class="chart-caption">x-axis: excerpt relative time (ms). Each lane uses a 0..1 normalized envelope, so the lower after lane is not a negative waveform.</div>
+            <div style="height: 12px;"></div>
+            <div class="chart-title">Difference (Magnified)</div>
+            <canvas id="diffCompareCanvas" class="preview-canvas tall" width="920" height="180"></canvas>
+            <div class="chart-caption">y-axis: absolute delta magnitude. The scale stays sensitive to the selected region even when larger auto-fix changes happen elsewhere in the excerpt.</div>
+            <div style="height: 12px;"></div>
+            <div class="chart-title">Region Zoom</div>
+            <canvas id="regionZoomCanvas" class="preview-canvas short" width="920" height="140"></canvas>
+            <div class="chart-caption">Zoomed envelope around the issue region only. Top is before, bottom is after, and both lanes stay on a positive 0..1 scale.</div>
+            <div style="height: 12px;"></div>
+            <div class="preview-grid">
+              <div class="preview-card">
+                <div class="chart-title">Before Spectrum</div>
+                <canvas id="beforeSpectrumCanvas" class="preview-canvas spectrum" width="920" height="220"></canvas>
+                <div class="chart-caption">y-axis: shared dB range across before and after, so height is directly comparable.</div>
+              </div>
+              <div class="preview-card">
+                <div class="chart-title">After Spectrum</div>
+                <canvas id="afterSpectrumCanvas" class="preview-canvas spectrum" width="920" height="220"></canvas>
+                <div class="chart-caption">Uses the same y-axis as before spectrum for direct comparison.</div>
+              </div>
+              <div class="preview-card">
+                <div class="chart-title">Diff Spectrum</div>
+                <canvas id="diffSpectrumCanvas" class="preview-canvas spectrum" width="920" height="220"></canvas>
+                <div class="chart-caption">Orange bars show where energy changed most. Taller bars mean stronger change in that band.</div>
+              </div>
+            </div>
+          </div>
+          <div style="display: grid; gap: 12px;">
+            <div class="preview-card">
+              <div class="chart-title">Preview Meta</div>
+              <div class="preview-meta">
+                <div><strong>region</strong> <span class="muted">${escapeHtml(preview.preview_target_region ?? "-")}</span></div>
+                <div><strong>issue</strong> <span class="muted">${escapeHtml(focusRegion.issue_type ?? "-")}</span></div>
+                <div><strong>excerpt</strong> <span class="muted">${escapeHtml(formatRange(preview.preview_excerpt_range?.start_ms, preview.preview_excerpt_range?.end_ms))}</span></div>
+                <div><strong>action</strong> <span class="muted">${escapeHtml(formatActionType(action.action_type) || "-")}</span></div>
+                <div><strong>target</strong> <span class="muted">${escapeHtml(action.target_scope ?? "-")} / ${escapeHtml(action.target_track_id ?? "-")}</span></div>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="chart-title">Metrics</div>
+              <div class="metric-grid">
+                ${metrics.map((item) => `
+                  <div class="metric-card">
+                    <div class="metric-label">${escapeHtml(item.label)}</div>
+                    <div class="metric-value">${escapeHtml(item.value)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="chart-title">Prompt Feedback</div>
+              <div class="hint-list">
+                ${hints.map((hint) => `
+                  <div class="hint-card ${escapeHtml(hint.verdict || "warn")}">
+                    <div class="hint-title">
+                      <span>${escapeHtml(hint.label ?? "-")}</span>
+                      <span class="muted">${escapeHtml(hint.verdict ?? "-")}</span>
+                    </div>
+                    <div class="hint-prompt">${escapeHtml(hint.detail ?? "-")}</div>
+                    <div class="hint-prompt">${escapeHtml(hint.prompt_hint ?? "-")}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="chart-title">Issue Overlay</div>
+              <details class="overlay-details">
+                <summary>Show Raw Overlay JSON</summary>
+                <pre>${escapeHtml(pretty(issueOverlay))}</pre>
+              </details>
+            </div>
+          </div>
+        </div>
+        </section>
+      `;
+    }
+
+    function paintPreviewCompare(compare, root) {
+      const preview = compare?.preview ?? {};
+      const focusRegion = compare?.focus_region ?? {};
+      const beforeExcerpt = compare?.before_excerpt ?? {};
+      const afterExcerpt = compare?.after_excerpt ?? {};
+      const diffExcerpt = compare?.diff_excerpt ?? {};
+
+      drawWaveformCompare(
+        root.querySelector("#masterCompareCanvas"),
+        beforeExcerpt.waveform_points ?? [],
+        afterExcerpt.waveform_points ?? [],
+        preview.preview_excerpt_range ?? {},
+        focusRegion,
+      );
+      drawSingleSeries(
+        root.querySelector("#diffCompareCanvas"),
+        diffExcerpt.waveform_points ?? [],
+        "#b45f06",
+        {
+          leftLabel: "|after-before|",
+          bottomLabel: buildTimeAxisLabel(preview.preview_excerpt_range),
+          highlightRange: buildRelativeRange(preview.preview_excerpt_range ?? {}, focusRegion),
+          yLabels: buildDiffYAxisLabels(
+            diffExcerpt.waveform_points ?? [],
+            buildRelativeRange(preview.preview_excerpt_range ?? {}, focusRegion),
+          ),
+          valueMax: pickDiffScaleMax(
+            diffExcerpt.waveform_points ?? [],
+            buildRelativeRange(preview.preview_excerpt_range ?? {}, focusRegion),
+          ),
+        },
+      );
+      drawRegionZoom(
+        root.querySelector("#regionZoomCanvas"),
+        beforeExcerpt.waveform_points ?? [],
+        afterExcerpt.waveform_points ?? [],
+        preview.preview_excerpt_range ?? {},
+        focusRegion,
+      );
+      const sharedSpectrumRange = buildSharedSpectrumRange(
+        beforeExcerpt.spectrum_bins ?? [],
+        afterExcerpt.spectrum_bins ?? [],
+      );
+      drawSpectrumBars(
+        root.querySelector("#beforeSpectrumCanvas"),
+        beforeExcerpt.spectrum_bins ?? [],
+        "#6d8b74",
+        { axisRange: sharedSpectrumRange },
+      );
+      drawSpectrumBars(
+        root.querySelector("#afterSpectrumCanvas"),
+        afterExcerpt.spectrum_bins ?? [],
+        "#3f6c99",
+        { axisRange: sharedSpectrumRange },
+      );
+      drawSpectrumBars(root.querySelector("#diffSpectrumCanvas"), diffExcerpt.spectrum_bins ?? [], "#b45f06");
+    }
+
+    function buildMetricCards(beforeRegionSummary, afterRegionSummary, issueOverlay) {
+      const issueMetrics = issueOverlay?.metrics ?? {};
+      const rmsDelta = Number(afterRegionSummary.rms_dbfs ?? 0) - Number(beforeRegionSummary.rms_dbfs ?? 0);
+      const peakDelta = Number(afterRegionSummary.true_peak_dbfs ?? 0) - Number(beforeRegionSummary.true_peak_dbfs ?? 0);
+      const issueLabel = ({
+        master_clipping: "Clipped Samples",
+        track_clipping: "Track Clipped",
+        sibilance: "Band Delta",
+        high_band_harshness: "Band Delta",
+        band_overlap: "Body Overlap",
+      })[issueOverlay?.kind] ?? "Issue Metric";
+      const issueValue = issueOverlay?.kind === "band_overlap"
+        ? `${formatNumber(issueMetrics.before_body_overlap)} -> ${formatNumber(issueMetrics.after_body_overlap)}`
+        : (issueOverlay?.kind === "sibilance" || issueOverlay?.kind === "high_band_harshness")
+          ? `${formatNumber(issueMetrics.band_delta_db)} dB`
+          : `${issueMetrics.before_clipped_sample_count ?? 0} -> ${issueMetrics.after_clipped_sample_count ?? 0}`;
+      return [
+        {
+          label: "True Peak",
+          value: `${formatNumber(beforeRegionSummary.true_peak_dbfs)} -> ${formatNumber(afterRegionSummary.true_peak_dbfs)} dBFS`,
+        },
+        {
+          label: "RMS",
+          value: `${formatNumber(beforeRegionSummary.rms_dbfs)} -> ${formatNumber(afterRegionSummary.rms_dbfs)} dBFS`,
+        },
+        {
+          label: "Crest",
+          value: `${formatNumber(beforeRegionSummary.crest_factor_db)} -> ${formatNumber(afterRegionSummary.crest_factor_db)} dB`,
+        },
+        {
+          label: "Peak Delta",
+          value: `${formatSignedNumber(peakDelta)} dB`,
+        },
+        {
+          label: "RMS Delta",
+          value: `${formatSignedNumber(rmsDelta)} dB`,
+        },
+        {
+          label: issueLabel,
+          value: issueValue,
+        },
+      ];
+    }
+
+    function drawWaveformCompare(canvas, beforePoints, afterPoints, excerptRange, focusRegion) {
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fffef9";
+      ctx.fillRect(0, 0, width, height);
+      const padding = { left: 56, right: 18, top: 18, bottom: 28 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const topHeight = plotHeight * 0.44;
+      const bottomStart = padding.top + (plotHeight * 0.56);
+      drawPlotFrame(ctx, padding, plotWidth, plotHeight, buildTimeTicks(excerptRange), ["1.00", "0.50", "0.00"]);
+      drawAreaSeries(ctx, beforePoints, padding.left, padding.top, plotWidth, topHeight, "#6d8b74");
+      drawAreaSeries(ctx, afterPoints, padding.left, bottomStart, plotWidth, topHeight, "#3f6c99");
+      drawSeriesLabel(ctx, padding.left + 8, padding.top + 12, "before envelope");
+      drawSeriesLabel(ctx, padding.left + 8, bottomStart + 12, "after envelope");
+
+      const excerptStart = Number(excerptRange?.start_ms ?? 0);
+      const excerptEnd = Number(excerptRange?.end_ms ?? 1);
+      const regionStart = Number(focusRegion?.start_ms ?? excerptStart);
+      const regionEnd = Number(focusRegion?.end_ms ?? excerptEnd);
+      const startX = padding.left + (plotWidth * clamp((regionStart - excerptStart) / Math.max(excerptEnd - excerptStart, 1), 0, 1));
+      const endX = padding.left + (plotWidth * clamp((regionEnd - excerptStart) / Math.max(excerptEnd - excerptStart, 1), 0, 1));
+      ctx.fillStyle = "rgba(180, 95, 6, 0.12)";
+      ctx.fillRect(startX, padding.top, Math.max(endX - startX, 2), plotHeight);
+      ctx.strokeStyle = "rgba(180, 95, 6, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startX, padding.top);
+      ctx.lineTo(startX, padding.top + plotHeight);
+      ctx.moveTo(endX, padding.top);
+      ctx.lineTo(endX, padding.top + plotHeight);
+      ctx.stroke();
+      drawSeriesLabel(ctx, startX + 4, padding.top + 16, "region");
+    }
+
+    function drawSingleSeries(canvas, points, color, options = {}) {
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fffef9";
+      ctx.fillRect(0, 0, width, height);
+      const padding = { left: 56, right: 18, top: 18, bottom: 28 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      drawPlotFrame(
+        ctx,
+        padding,
+        plotWidth,
+        plotHeight,
+        buildTimeTicksFromLabel(options.bottomLabel),
+        options.yLabels ?? ["1.00", "0.50", "0.00"],
+      );
+      drawAreaSeries(
+        ctx,
+        points,
+        padding.left,
+        padding.top,
+        plotWidth,
+        plotHeight,
+        color,
+        { valueMax: options.valueMax },
+      );
+      if (options.highlightRange) {
+        const startX = padding.left + (plotWidth * options.highlightRange.startRatio);
+        const endX = padding.left + (plotWidth * options.highlightRange.endRatio);
+        ctx.fillStyle = "rgba(180, 95, 6, 0.1)";
+        ctx.fillRect(startX, padding.top, Math.max(endX - startX, 2), plotHeight);
+      }
+      if (options.leftLabel) {
+        drawSeriesLabel(ctx, 8, padding.top + 14, options.leftLabel);
+      }
+    }
+
+    function drawAreaSeries(ctx, points, xStart, yStart, bandWidth, bandHeight, color, options = {}) {
+      const maxValue = Math.max(Number(options.valueMax ?? 0), ...points, 0.0001);
+      const baselineY = yStart + bandHeight - 8;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = `${color}33`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      points.forEach((value, index) => {
+        const x = xStart + ((index / Math.max(points.length - 1, 1)) * bandWidth);
+        const amplitude = (value / maxValue) * (bandHeight * 0.78);
+        const y = baselineY - amplitude;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(xStart + bandWidth, baselineY);
+      ctx.lineTo(xStart, baselineY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawSpectrumBars(canvas, values, color, options = {}) {
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fffef9";
+      ctx.fillRect(0, 0, width, height);
+      const padding = { left: 44, right: 10, top: 10, bottom: 24 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const numericValues = values.map((value) => Number(value ?? -120));
+      const minValue = Number(options.axisRange?.min ?? Math.min(...numericValues, -120));
+      const maxValue = Number(options.axisRange?.max ?? Math.max(...numericValues, -20));
+      drawPlotFrame(
+        ctx,
+        padding,
+        plotWidth,
+        plotHeight,
+        [{ ratio: 0, label: "low" }, { ratio: 0.5, label: "mid" }, { ratio: 1, label: "high" }],
+        [formatNumber(maxValue), formatNumber((maxValue + minValue) / 2), formatNumber(minValue)],
+      );
+      const barWidth = plotWidth / Math.max(numericValues.length, 1);
+      ctx.fillStyle = color;
+      numericValues.forEach((value, index) => {
+        const normalized = (value - minValue) / Math.max(maxValue - minValue, 1);
+        const barHeight = Math.max(normalized * plotHeight, 2);
+        ctx.fillRect(
+          padding.left + (index * barWidth),
+          padding.top + plotHeight - barHeight,
+          Math.max(barWidth - 1, 1),
+          barHeight,
+        );
+      });
+    }
+
+    function drawRegionZoom(canvas, beforePoints, afterPoints, excerptRange, focusRegion) {
+      if (!canvas) return;
+      const range = buildRelativeRange(excerptRange, focusRegion);
+      const zoomBefore = sliceSeriesByRatio(beforePoints, range.startRatio, range.endRatio, 200);
+      const zoomAfter = sliceSeriesByRatio(afterPoints, range.startRatio, range.endRatio, 200);
+      const ctx = canvas.getContext("2d");
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fffef9";
+      ctx.fillRect(0, 0, width, height);
+      const padding = { left: 56, right: 18, top: 18, bottom: 28 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const topHeight = plotHeight * 0.44;
+      const bottomStart = padding.top + (plotHeight * 0.56);
+      drawPlotFrame(ctx, padding, plotWidth, plotHeight, buildRegionTicks(focusRegion), ["1.00", "0.50", "0.00"]);
+      drawAreaSeries(ctx, zoomBefore, padding.left, padding.top, plotWidth, topHeight, "#6d8b74");
+      drawAreaSeries(ctx, zoomAfter, padding.left, bottomStart, plotWidth, topHeight, "#3f6c99");
+      drawSeriesLabel(ctx, padding.left + 8, padding.top + 12, "before zoom");
+      drawSeriesLabel(ctx, padding.left + 8, bottomStart + 12, "after zoom");
+    }
+
+    function drawPlotFrame(ctx, padding, plotWidth, plotHeight, xTicks, yLabels) {
+      const left = padding.left;
+      const top = padding.top;
+      ctx.strokeStyle = "rgba(33, 37, 41, 0.16)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left, top, plotWidth, plotHeight);
+      ctx.font = "12px sans-serif";
+      ctx.fillStyle = "#7d6c56";
+      ctx.textBaseline = "middle";
+      yLabels.forEach((label, index) => {
+        const ratio = yLabels.length === 1 ? 0 : index / (yLabels.length - 1);
+        const y = top + (ratio * plotHeight);
+        ctx.strokeStyle = "rgba(33, 37, 41, 0.08)";
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + plotWidth, y);
+        ctx.stroke();
+        ctx.fillText(String(label), 8, y);
+      });
+      ctx.textBaseline = "top";
+      xTicks.forEach((tick) => {
+        const x = left + (plotWidth * tick.ratio);
+        ctx.strokeStyle = "rgba(33, 37, 41, 0.08)";
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + plotHeight);
+        ctx.stroke();
+        ctx.fillText(String(tick.label), x - 10, top + plotHeight + 6);
+      });
+    }
+
+    function buildDiffYAxisLabels(points, highlightRange = null) {
+      const maxValue = pickDiffScaleMax(points, highlightRange);
+      if (maxValue <= 0) {
+        return ["0.000", "0.000", "0.000", "0.000", "0.000"];
+      }
+      return [1, 0.75, 0.5, 0.25, 0].map((ratio) => formatAxisNumber(maxValue * ratio));
+    }
+
+    function pickDiffScaleMax(points, highlightRange = null) {
+      const numericPoints = points
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value));
+      if (!numericPoints.length) return 0;
+      const sorted = [...numericPoints].sort((a, b) => a - b);
+      const percentileIndex = Math.max(Math.floor(sorted.length * 0.98) - 1, 0);
+      const percentileMax = sorted[percentileIndex];
+      const regionMax = highlightRange
+        ? Math.max(
+            ...sliceSeriesByRatio(points, highlightRange.startRatio, highlightRange.endRatio, points.length)
+              .map((value) => Number(value))
+              .filter((value) => Number.isFinite(value)),
+            0,
+          )
+        : 0;
+      return Math.max(percentileMax, regionMax, 0.0001);
+    }
+
+    function buildSharedSpectrumRange(beforeValues, afterValues) {
+      const numericBefore = beforeValues.map((value) => Number(value ?? -120)).filter((value) => Number.isFinite(value));
+      const numericAfter = afterValues.map((value) => Number(value ?? -120)).filter((value) => Number.isFinite(value));
+      const combined = [...numericBefore, ...numericAfter];
+      return {
+        min: Math.min(...combined, -120),
+        max: Math.max(...combined, -20),
+      };
+    }
+
+    function formatAxisNumber(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return "-";
+      if (Math.abs(numeric) >= 1) return numeric.toFixed(2);
+      if (Math.abs(numeric) >= 0.01) return numeric.toFixed(3);
+      if (Math.abs(numeric) >= 0.001) return numeric.toFixed(4);
+      return numeric.toExponential(2);
+    }
+
+    function drawSeriesLabel(ctx, x, y, text) {
+      ctx.font = "12px sans-serif";
+      ctx.fillStyle = "#7d6c56";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(text), x, y);
+    }
+
+    function buildTimeTicks(excerptRange) {
+      const start = Number(excerptRange?.start_ms ?? 0);
+      const end = Number(excerptRange?.end_ms ?? 0);
+      const duration = Math.max(end - start, 1);
+      return [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
+        ratio,
+        label: `${Math.round(duration * ratio)}ms`,
+      }));
+    }
+
+    function buildTimeTicksFromLabel(label) {
+      return Array.isArray(label) ? label : [{ ratio: 0, label: "0" }, { ratio: 0.5, label: "mid" }, { ratio: 1, label: "end" }];
+    }
+
+    function buildTimeAxisLabel(excerptRange) {
+      return buildTimeTicks(excerptRange);
+    }
+
+    function buildRegionTicks(focusRegion) {
+      const start = Number(focusRegion?.start_ms ?? 0);
+      const end = Number(focusRegion?.end_ms ?? start + 1);
+      const duration = Math.max(end - start, 1);
+      return [0, 0.5, 1].map((ratio) => ({
+        ratio,
+        label: `${Math.round(duration * ratio)}ms`,
+      }));
+    }
+
+    function buildRelativeRange(excerptRange, focusRegion) {
+      const excerptStart = Number(excerptRange?.start_ms ?? 0);
+      const excerptEnd = Number(excerptRange?.end_ms ?? 1);
+      const duration = Math.max(excerptEnd - excerptStart, 1);
+      const regionStart = Number(focusRegion?.start_ms ?? excerptStart);
+      const regionEnd = Number(focusRegion?.end_ms ?? excerptEnd);
+      return {
+        startRatio: clamp((regionStart - excerptStart) / duration, 0, 1),
+        endRatio: clamp((regionEnd - excerptStart) / duration, 0, 1),
+      };
+    }
+
+    function sliceSeriesByRatio(points, startRatio, endRatio, targetCount) {
+      const startIndex = Math.max(Math.floor(points.length * startRatio), 0);
+      const endIndex = Math.max(Math.ceil(points.length * endRatio), startIndex + 2);
+      const sliced = points.slice(startIndex, endIndex);
+      if (sliced.length <= targetCount) return sliced;
+      const step = sliced.length / targetCount;
+      return Array.from({ length: targetCount }, (_, index) => sliced[Math.min(Math.floor(index * step), sliced.length - 1)]);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatNumber(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return "-";
+      return numeric.toFixed(2);
+    }
+
+    function formatSignedNumber(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return "-";
+      return `${numeric >= 0 ? "+" : ""}${numeric.toFixed(2)}`;
+    }
+
+    async function callJson(path, payload, method = "POST") {
+      const response = await fetch(api(path), {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { raw: text };
+      }
+      if (!response.ok) {
+        throw new Error(pretty(data));
+      }
+      return data;
+    }
+
+    async function startJob() {
+      const payload = {
+        job_id: Number(els.jobId.value),
+        project_id: Number(els.projectId.value),
+        requested_by: Number(els.requestedBy.value),
+        issue_types: parseIssueTypes(),
+        project_snapshot: JSON.parse(els.snapshotJson.value),
+      };
+      const data = await callJson("/internal/workflow/jobs/start", payload);
+      setResponse(data);
+      els.summaryText.textContent = "start accepted\n\n" + pretty(data);
+    }
+
+    async function pollJob() {
+      const data = await callJson(`/internal/workflow/jobs/${Number(els.jobId.value)}`, null, "GET");
+      setResponse(data);
+      return data;
+    }
+
+    async function resumePlanInput() {
+      const payload = {
+        job_id: Number(els.jobId.value),
+        project_id: Number(els.projectId.value),
+        requested_by: Number(els.requestedBy.value),
+        selected_region_id: els.selectedRegionId.value ? Number(els.selectedRegionId.value) : null,
+        preserve_clip_id: Number(els.preserveClipId.value),
+        user_feedback_message: els.feedbackMessage.value.trim() || null,
+      };
+      const data = await callJson("/internal/workflow/jobs/resume", payload);
+      setResponse(data);
+      els.summaryText.textContent = "resume accepted\n\n" + pretty(data);
+    }
+
+    async function pollPreview() {
+      const data = await pollJob();
+      const preview = data?.projections?.preview_render ?? null;
+      if (!preview) {
+        els.summaryText.textContent = "preview_render가 아직 없습니다.\n\n" + pretty(data);
+        return;
+      }
+      els.summaryText.textContent = "preview poll\n\n" + pretty(preview);
+    }
+
+    async function pollUntilPreviewReady() {
+      const maxAttempts = 12;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const data = await pollJob();
+        const preview = data?.projections?.preview_render ?? null;
+        if (preview?.status === "READY") {
+          els.summaryText.textContent = `preview ready after ${attempt} poll(s)\n\n` + pretty(preview);
+          return;
+        }
+        if (preview?.status === "FAILED") {
+          els.summaryText.textContent = `preview failed\n\n` + pretty(preview);
+          return;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      }
+      els.summaryText.textContent = "preview가 READY가 되지 않았습니다. Poll로 상태를 다시 확인하세요.";
+    }
+
+    async function resumeConfirm(decision) {
+      const payload = {
+        job_id: Number(els.jobId.value),
+        project_id: Number(els.projectId.value),
+        requested_by: Number(els.requestedBy.value),
+        user_decision: decision,
+      };
+      const data = await callJson("/internal/workflow/jobs/resume", payload);
+      setResponse(data);
+      els.summaryText.textContent = `${decision} accepted\n\n` + pretty(data);
+    }
+
+    function canBuildMasterFromRegion(region) {
+      const affected = Array.isArray(region?.affected_clip_ids) ? region.affected_clip_ids : [];
+      return affected.length > 0;
+    }
+
+    function findDefaultPlanRegion() {
+      const regions = latestStatus?.projections?.analysis_regions ?? [];
+      const rankedUserRegions = regions
+        .filter((region) => region?.requires_user_action === true)
+        .sort((left, right) => Number(right?.ranking_score ?? 0) - Number(left?.ranking_score ?? 0));
+      return rankedUserRegions[0] ?? null;
+    }
+
+    function findDefaultSourceMixRegion() {
+      const regions = latestStatus?.projections?.analysis_regions ?? [];
+      const sourceMixRegions = regions
+        .filter((region) => canBuildMasterFromRegion(region))
+        .sort((left, right) => Number(right?.ranking_score ?? 0) - Number(left?.ranking_score ?? 0));
+      return sourceMixRegions[0] ?? null;
+    }
+
+    function autofillFirstRegion() {
+      const region = findDefaultPlanRegion() ?? findDefaultSourceMixRegion();
+      if (!region) {
+        alert("analysis_regions가 아직 없습니다. 먼저 Poll 하세요.");
+        return;
+      }
+      fillPlanInputFromRegion(region);
+    }
+
+    function fillSampleSnapshot() {
+      const payload = {
+        duration_ms: 20058,
+        bpm: 96,
+        numerator: 4,
+        denominator: 4,
+        tracks: [
+          { track_id: 10, name: "Piano Master Bed" },
+          { track_id: 20, name: "Organic Guitar Percussion" },
+          { track_id: 30, name: "Clean Guitar Hook" }
+        ],
+        clips: [
+          {
+            clip_id: 10001,
+            track_id: 10,
+            start_ms: 0,
+            end_ms: 20058,
+            audio_metadata_id: 801,
+            audio_path: "C:/Users/SSAFY/Desktop/ssafy_2026/project/studion/S14P31A205/ai/generated-audio/shidenbeatsmusic-loop-file-positive-and-gentle-piano-song-157353.mp3",
+            audio_start_ms: 0,
+            audio_duration_ms: 20058
+          },
+          {
+            clip_id: 20001,
+            track_id: 20,
+            start_ms: 0,
+            end_ms: 20058,
+            audio_metadata_id: 802,
+            audio_path: "C:/Users/SSAFY/Desktop/ssafy_2026/project/studion/S14P31A205/ai/generated-audio/shidenbeatsmusic-loop-acoustic-guitar-and-organic-percussion-130606.mp3",
+            audio_start_ms: 0,
+            audio_duration_ms: 20058
+          },
+          {
+            clip_id: 30001,
+            track_id: 30,
+            start_ms: 6000,
+            end_ms: 12904,
+            audio_metadata_id: 803,
+            audio_path: "C:/Users/SSAFY/Desktop/ssafy_2026/project/studion/S14P31A205/ai/generated-audio/shidenbeatsmusic-jingle-clean-guitar-funky-and-rock-style-21690.mp3",
+            audio_start_ms: 0,
+            audio_duration_ms: 6904
+          }
+        ]
+      };
+      els.snapshotJson.value = pretty(payload);
+    }
+
+    function wire(button, fn) {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await fn();
+        } catch (error) {
+          els.summaryText.textContent = String(error.message || error);
+        } finally {
+          button.disabled = false;
+        }
+      });
+    }
+
+    fillSampleSnapshot();
+    wire(els.startBtn, startJob);
+    wire(els.pollBtn, pollJob);
+    wire(els.resumeBtn, resumePlanInput);
+    wire(els.pollPreviewBtn, pollPreview);
+    wire(els.autoplayPreviewBtn, pollUntilPreviewReady);
+    wire(els.confirmBtn, () => resumeConfirm("confirm"));
+    wire(els.cancelBtn, () => resumeConfirm("cancel"));
+    els.fillSampleBtn.addEventListener("click", fillSampleSnapshot);
+    els.autofillBtn.addEventListener("click", autofillFirstRegion);
+  </script>
+</body>
+</html>

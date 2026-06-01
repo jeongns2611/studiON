@@ -1,0 +1,28 @@
+You are generating one safe EQ-only correction plan for an audio workflow.
+Return only a JSON object with this shape:
+{"strategyTitle": string, "strategySummary": string, "summary": string, "explanation": string, "candidate": {"action": {"actionType": string, "targetScope": "TRACK", "targetTrackId": number|null, "targetClipId": number|null, "startMs": number|null, "endMs": number|null, "bandLowHz": number|null, "bandHighHz": number|null, "gainDeltaDb": number|null, "params": object}}}
+
+Rules:
+- Use only one action.
+- Use only DYNAMIC_EQ or EQ_CUT.
+- Use TRACK scope only.
+- Never use DE_ESSER, GAIN_TRIM, or TRUE_PEAK_LIMITER.
+- For band_overlap, prefer DYNAMIC_EQ when the masking is sustained or broad.
+- For band_overlap, allow EQ_CUT when the conflict is narrow, static, and a smaller local cut is safer than dynamic control.
+- For sibilance, reinterpret the fix as a high-band DYNAMIC_EQ.
+- For track_clipping, only emit an EQ action when the region supports a band-focused fix.
+- For track_clipping with a low-mid or broad body band, prefer EQ_CUT.
+- For track_clipping with a clearly high-band focus, prefer DYNAMIC_EQ.
+- If the issue or band focus is ambiguous, choose the more conservative action type and smaller cut.
+- Never target the preserve clip track.
+- Prefer the non-preserve track with the strongest contribution to the selected problem.
+- Keep targetClipId null.
+- Keep startMs and endMs inside the selected region.
+- Keep bandLowHz and bandHighHz inside the region band.
+- If revision notes mention leakage, range too wide, or overreach, tighten the time range and band range instead of widening them.
+- If user feedback says to preserve texture, warmth, body, or vocal character, reduce gain more conservatively and avoid wider bands.
+- Prefer a conservative gain reduction over an aggressive cut.
+- Keep gainDeltaDb modest. Prefer about -1.5 to -3.0 dB unless the context strongly requires otherwise.
+- Keep the explanation concrete: name the target track, band focus, and why the preserve target stays untouched.
+- Use revision notes and user feedback when present.
+- Write a short explanation that matches the actual action.

@@ -1,0 +1,45 @@
+//타입스크립트가 이해할 수 있게 번역해주는 설정파일(컴퓨터에서 돌아감)
+{
+  "compilerOptions": {
+    //빌드할 때 생기는 임시파일 매번 검사 방지
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    //타겟: 2023년 버전 문법까지 허용
+    "target": "es2023",
+    //라이브러리: 2023년 버전 문법까지 허용
+    "lib": [
+      "ES2023"
+    ],
+    //모듈: 최신 모듈 방식 사용
+    "module": "esnext",
+    //타입: 노드js 문법 사용
+    "types": [
+      "node"
+    ],
+    //라이브러리 검사 생략
+    "skipLibCheck": true,
+    /* Bundler mode */
+    //모듈 해석 방식: 번들러 모드 최적화 방식으로 경로 찾기
+    "moduleResolution": "bundler",
+    //ts파일을 import 할 때 확장자 생략 허용
+    "allowImportingTsExtensions": true,
+    //모듈 구문 그대로 사용
+    "verbatimModuleSyntax": true,
+    //모듈 감지 강제
+    "moduleDetection": "force",
+    //빌드 결과물 생성 안함
+    "noEmit": true,
+    /* Linting */
+    //사용하지 않는 지역변수 검사
+    "noUnusedLocals": true,
+    //사용하지 않는 매개변수 검사
+    "noUnusedParameters": true,
+    //erasableSyntaxOnly
+    "erasableSyntaxOnly": true,
+    //switch문에서 fallthrough 검사
+    "noFallthroughCasesInSwitch": true
+  },
+  //vite.config.ts 파일만 검사
+  "include": [
+    "vite.config.ts"
+  ]
+}

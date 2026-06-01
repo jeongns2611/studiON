@@ -1,0 +1,25 @@
+//어떤 코드가 어떤 경로로 갈지 설정
+{
+  //이파일 자체는 어떤 .ts파일도 직접 검사하지 않음
+  "files": [],
+  //하위 설정 파일 연결
+  //화면 코드는 app.json에서 검사
+  //노드 코드는 node.json에서 검사
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  //공통 옵션
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  }
+}

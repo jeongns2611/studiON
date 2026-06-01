@@ -1,0 +1,30 @@
+//src폴더 안에서 돌아가는 실제 화면 코드 검사
+{
+  //본사 표준 웹 브라우저(DOM) 메뉴얼 상속
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  //추가 설정
+  "compilerOptions": {
+    // TypeScript 6.0에서 deprecated된 기능까지 무시
+    "ignoreDeprecations": "5.0",
+    //빌드 결과물 임시 저장 파일
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    //vite 전용 특수 문법 이해 지시
+    "types": [
+      "vite/client"
+    ],
+    //경로 별칭 설정
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  //실제 검사 대상 파일 범위
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue"
+  ]
+}

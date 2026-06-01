@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+
+# Virtual environments
+.venv/
+*.pyc
+.env
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local outputs
+data/
+outputs/
+models/
+checkpoints/
+
+# PyCharm / JetBrains IDE
+.idea/
+*.iml
+out/
+
+# PyCharm local settings
+workspace.xml
+tasks.xml
+usage.statistics.xml
+dictionaries/
+shelf/
+
+# PyCharm HTTP client
+.httpRequests/
+
+# JetBrains caches
+.idea_modules/
+
+AI/.pyppeteer/
+
+*.wav
+*.mp3
+*.png
+.pyppeteer
